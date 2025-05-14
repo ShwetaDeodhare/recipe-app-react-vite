@@ -21,7 +21,7 @@ const RecipeCard: React.FC<RecipeCardProps> = ({
 	const [imgLoaded, setImgLoaded] = useState(false);
 	return (
 		<div
-			className="recipe-card p-4 flex align-center flex-col border border-gray-300 rounded-md shadow-md hover:shadow-lg transition-shadow duration-300"
+			className="recipe-card flex-grow p-4 mb-10 flex align-center flex-col border border-gray-300 rounded-md shadow-md hover:shadow-lg transition-shadow duration-300"
 			key={id}>
 			<div className="relative w-full h-48 mb-4 overflow-hidden rounded">
 				{/* Skeleton while image is loading */}

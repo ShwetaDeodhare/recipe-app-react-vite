@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import RecipeCard from "../../components/Card/RecipeCard";
+import RecipeForm from "./RecipeForm";
 
 const AddRecipe = () => {
 	const initialState = {
@@ -21,18 +22,10 @@ const AddRecipe = () => {
 	};
 
 	const [formData, setFormData] = useState(initialState);
-	interface Recipe {
-		id: number;
-		image: string;
-		name: string;
-		instructions: [];
-		difficulty: string;
-		cuisine: string;
-		// Add other fields as necessary
-	}
+	const [submittedRecipes, setSubmittedRecipes] = useState<any[]>([]);
+	const [editMode, setEditMode] = useState(false);
+	const [editId, setEditId] = useState<number | null>(null);
 
-	const [submittedRecipe, setSubmittedRecipe] = useState<Recipe | null>(null);
-	// const [submittedRecipes, setSubmittedRecipes] = useState<Recipe[]>([]);
 
 	const handleChange = (
 		e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -78,158 +71,76 @@ const AddRecipe = () => {
 			reviewCount: Number(formData.reviewCount),
 		};
 
-		console.log(parsedData);
+		if (editMode && editId !== null) {
+			const updatedRecipes = submittedRecipes.map((recipe) =>
+				recipe.id === editId ? { ...recipe, ...parsedData, id: editId } : recipe
+			);
+			setSubmittedRecipes(updatedRecipes);
+			setEditMode(false);
+			setEditId(null);
+		} else{
+			fetch("https://dummyjson.com/recipes/add", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(parsedData),
+			})
+				.then((res) => res.json())
+				.then((data) => {
+					setSubmittedRecipes((prev) => [...prev, data]);
+				});
+		}
 
-		// Optional: POST request
-		fetch("https://dummyjson.com/recipes/add", {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(parsedData),
-		})
-			.then((res) => res.json())
-			.then((data) => {
-				console.log(data);
-				setSubmittedRecipe(data);
-			});
 		setFormData(initialState);
 	};
 
-	console.log("Submitted Recipe:", submittedRecipe);
+	const handleEdit = (recipe: Recipes) => {
+		setFormData({
+			...recipe,
+			prepTimeMinutes: Number(recipe.prepTimeMinutes),
+			cookTimeMinutes: Number(recipe.cookTimeMinutes),
+			servings: Number(recipe.servings),
+			caloriesPerServing: Number(recipe.caloriesPerServing),
+			userId: Number(recipe.userId),
+			rating: parseFloat(recipe.rating),
+			reviewCount: Number(recipe.reviewCount),
+		})
+		setEditMode(true);
+		setEditId(recipe.id);
+
+	}
 
 	return (
 		<div className="container mx-auto px-4 py-6">
-			<form onSubmit={handleSubmit} className="space-y-4">
-				<div>
-					<label className="block mb-1 font-medium">Name</label>
-					<input
-						className="border border-gray-300 rounded-lg p-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-						name="name"
-						placeholder="Name"
-						value={formData.name}
-						onChange={handleChange}
-					/>
-				</div>
+			<RecipeForm
+				formData={formData}
+				handleChange={handleChange}
+				handleArrayChange={handleArrayChange}
+				addArrayField={addArrayField}
+				handleSubmit={handleSubmit}
+			/>
 
-				<div>
-					<label className="block mb-1 font-medium">Ingredients</label>
-					{formData.ingredients.map((item, idx) => (
-						<input
-							key={idx}
-							className="mb-2 border border-gray-300 rounded-lg p-2 w-full"
-							value={item}
-							placeholder={`Ingredient ${idx + 1}`}
-							onChange={(e) => handleArrayChange(e, idx, "ingredients")}
-						/>
-					))}
-					<button
-						type="button"
-						className="text-blue-600"
-						onClick={() => addArrayField("ingredients")}>
-						+ Ingredient
-					</button>
-				</div>
-
-				<div>
-					<label className="block mb-1 font-medium">Instructions</label>
-					{formData.instructions.map((step, idx) => (
-						<input
-							key={idx}
-							className="mb-2 border border-gray-300 rounded-lg p-2 w-full"
-							placeholder={`Step ${idx + 1}`}
-							value={step}
-							onChange={(e) => handleArrayChange(e, idx, "instructions")}
-						/>
-					))}
-					<button
-						type="button"
-						className="text-blue-600"
-						onClick={() => addArrayField("instructions")}>
-						+ Step
-					</button>
-				</div>
-
-				{[
-					{ name: "prepTimeMinutes", label: "Prep Time (minutes)" },
-					{ name: "cookTimeMinutes", label: "Cook Time (minutes)" },
-					{ name: "servings", label: "Servings" },
-					{ name: "difficulty", label: "Difficulty" },
-					{ name: "cuisine", label: "Cuisine" },
-					{ name: "caloriesPerServing", label: "Calories Per Serving" },
-					{ name: "userId", label: "User ID" },
-					{ name: "image", label: "Image URL" },
-					{ name: "rating", label: "Rating" },
-					{ name: "reviewCount", label: "Review Count" },
-				].map(({ name, label }) => (
-					<div key={name}>
-						<label className="block mb-1 font-medium">{label}</label>
-						<input
-							name={name}
-							placeholder={label}
-							className="border border-gray-300 rounded-lg p-2 w-full"
-							value={formData[name]}
-							onChange={handleChange}
-						/>
-					</div>
-				))}
-
-				<div>
-					<label className="block mb-1 font-medium">Tags</label>
-					{formData.tags.map((tag, idx) => (
-						<input
-							key={idx}
-							className="mb-2 border border-gray-300 rounded-lg p-2 w-full"
-							value={tag}
-							placeholder={`Tag ${idx + 1}`}
-							onChange={(e) => handleArrayChange(e, idx, "tags")}
-						/>
-					))}
-					<button
-						type="button"
-						className="text-blue-600"
-						onClick={() => addArrayField("tags")}>
-						+ Tag
-					</button>
-				</div>
-
-				<div>
-					<label className="block mb-1 font-medium">Meal Type</label>
-					{formData.mealType.map((type, idx) => (
-						<input
-							key={idx}
-							className="mb-2 border border-gray-300 rounded-lg p-2 w-full"
-							value={type}
-							placeholder={`Meal Type ${idx + 1}`}
-							onChange={(e) => handleArrayChange(e, idx, "mealType")}
-						/>
-					))}
-					<button
-						type="button"
-						className="text-blue-600"
-						onClick={() => addArrayField("mealType")}>
-						+ Meal Type
-					</button>
-				</div>
-
-				<div>
-					<button
-						type="submit"
-						className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">
-						Submit Recipe
-					</button>
-				</div>
-			</form>
-			{submittedRecipe && (
+			{submittedRecipes.length > 0 && (
 				<div className="mt-8 p-4 border rounded-lg bg-gray-50">
-					<h2 className="text-lg font-semibold mb-2">Submitted Recipe:</h2>
-					<RecipeCard
-						key={submittedRecipe.id}
-						image={submittedRecipe.image}
-						title={submittedRecipe.name}
-						description={submittedRecipe.instructions}
-						id={submittedRecipe.id}
-						difficulty={submittedRecipe.difficulty}
-						cuisine={submittedRecipe.cuisine}
-					/>
+					<h2 className="text-lg font-semibold mb-2">Submitted Recipes:</h2>
+					{submittedRecipes.map((recipe) => (
+						<div className="flex justify-between">
+							<RecipeCard
+							key={recipe.id}
+							image={recipe.image}
+							title={recipe.name}
+							description={recipe.instructions}
+							id={recipe.id}
+							difficulty={recipe.difficulty}
+							cuisine={recipe.cuisine}
+						/>
+						<button
+							className="text-yellow-600 underline ml-2"
+							onClick={() => handleEdit(recipe)}
+						>
+							Edit
+						</button>
+						</div>
+					))}
 				</div>
 			)}
 		</div>
